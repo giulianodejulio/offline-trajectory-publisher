@@ -38,6 +38,8 @@ install(DIRECTORY
 install(TARGETS
 	talker
 	DESTINATION lib/${PROJECT_NAME})
+	
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 
 ament_package()
 

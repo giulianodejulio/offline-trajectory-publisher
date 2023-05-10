@@ -199,7 +199,7 @@ private:
             cmd_.motor_commands[j].torque_ref   = 0;
             cmd_.motor_commands[j].kp           = 0;
             cmd_.motor_commands[j].kd           = params_.kd;
-            cmd_.motor_commands[j].i_sat        = 0;
+            cmd_.motor_commands[j].i_sat        = params_.i_sat;
           }
       }
       //active state is "safe"
