@@ -27,7 +27,7 @@ def generate_launch_description():
     ld.add_action(otp_launch)
 
     # ODRI
-    bringup_args['odri'] = {'yaml_path': yaml_path}
+    bringup_args['odri'] = {'yaml_path': yaml_path, 'robot_name': robot_name}
     odri_path = PathJoinSubstitution([FindPackageShare('odri_ros2_hardware'), 'launch', '_robot_interface.launch.py'])
     odri_src = PythonLaunchDescriptionSource([odri_path])
     odri_launch = IncludeLaunchDescription(odri_src, launch_arguments=bringup_args['odri'].items())

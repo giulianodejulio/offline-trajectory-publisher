@@ -156,6 +156,8 @@ private:
             cmd_.motor_commands[j].kd           = params_.kd;
             cmd_.motor_commands[j].i_sat        = params_.i_sat;
           }
+          // std::cout << std::endl;
+
 
       }
       //active state is "enabled"
@@ -165,13 +167,13 @@ private:
         if(row_index_ < us_.rows())
         {
           for(int j = 0; j < 12; j++)
-          {
+          { if(j!=2){
             cmd_.motor_commands[j].position_ref = xs_(row_index_,j+7);
             cmd_.motor_commands[j].velocity_ref = xs_(row_index_,j+25);
             cmd_.motor_commands[j].torque_ref   = us_(row_index_,j);
             cmd_.motor_commands[j].kp           = params_.kp;
             cmd_.motor_commands[j].kd           = params_.kd;
-            cmd_.motor_commands[j].i_sat        = params_.i_sat;
+            cmd_.motor_commands[j].i_sat        = params_.i_sat;}
           }
           row_index_++;
         }
@@ -223,7 +225,7 @@ private:
 
   // State Machine Interface transition callbacks
     virtual bool transEnableCallback(std::string &message) override {
-      std::cout << "entered in transEnableCallback" << std::endl;
+      std::cout << "entered in transEnableCallback. publish_period = " << params_.publish_period << std::endl;
       return true;
     }
     virtual bool transStartCallback(std::string &message) override {

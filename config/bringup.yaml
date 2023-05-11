@@ -1,19 +1,21 @@
 odri/robot_interface:
   ros__parameters:
-    robot_yaml_name: "config_solo12.yaml"
-    n_slaves: 1
-    safe_configuration: [0.1, 0.8, -1.6, -0.1, 0.8, -1.6, 0.1, -0.8, 1.6, -0.1, -0.8, 1.6]
+    robot_yaml_name: "solo12.yaml"
+    n_slaves: 6
+    safe_configuration:
+      [0.1, 0.8, -1.6, -0.1, 0.8, -1.6, 0.1, -0.8, 1.6, -0.1, -0.8, 1.6]
     safe_torque: 1.0
-    safe_kp: 0.5
-    safe_kd: 2.5
+    safe_kp: 1.
+    safe_kd: 0.1
     safe_current: 5.0
 
-offline_trajectory_publisher_state_machine_interface:
+odri/talker:
   ros__parameters:
-    publish_period: 50 # [ms]
-    xs_dot_txt: "/home/hidro/solo12_ws/src/from_nparray_to_MatrixXd/src/xs.txt"
-    us_dot_txt: "/home/hidro/solo12_ws/src/from_nparray_to_MatrixXd/src/us.txt"
+    publish_period: 5 #[ms]
+    # xs_dot_txt: "/home/hidro/solo12_ws/src/from_nparray_to_MatrixXd/src/xs.txt"
+    xs_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/xs.txt"
+    # us_dot_txt: "/home/hidro/solo12_ws/src/from_nparray_to_MatrixXd/src/us.txt"
+    us_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/us.txt"
     kp: 1.0
-    kd: 1.0
-    i_sat: 1.0
-
+    kd: 0.1
+    i_sat: 5.0
