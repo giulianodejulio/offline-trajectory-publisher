@@ -10,7 +10,7 @@ def generate_launch_description():
 
     publish_period_arg = launch.actions.DeclareLaunchArgument(
         'publish_period',
-        default_value="50",
+        default_value="5",
         description="publishing period of the offline trajectory publisher"
     )
 
@@ -44,7 +44,7 @@ def generate_launch_description():
         description="i_sat value"
     )
 
-    remappings = [("odri_cmd", "/odri/RobotCommand")]
+    remappings = [("odri_cmd", "/odri/robot_command")]
 
     otp_smi = Node(package="offline_trajectory_publisher_state_machine_interface",
                     executable="talker",
