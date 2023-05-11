@@ -13,7 +13,7 @@ def generate_launch_description():
     platform_name = 'solo12'
     robot_name = platform_name
 
-    yaml_path = PathJoinSubstitution([FindPackageShare('offline_trajectory_publisher_state_machine_interface'), 'config', robot_name, 'bringup.yaml'])
+    yaml_path = PathJoinSubstitution([FindPackageShare('offline_trajectory_publisher_state_machine_interface'), 'config', 'bringup.yaml'])
 
     bringup_args = {}
 
