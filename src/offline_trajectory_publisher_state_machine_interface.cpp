@@ -16,7 +16,7 @@
 // #include "/home/hidro/solo12_ws/src/odri_ros2/odri_ros2_hardware/include/odri_ros2_hardware/robot_interface.hpp" //to use RobotCommand msg definition (?)
 // #include "odri_ros2_interfaces/msg/motor_command.hpp" //to use Motorommand msg definition
 #include "odri_ros2_interfaces/msg/robot_command.hpp" //to use RobotCommand msg definition
-
+std::vector<double> motor_offsets{0.11557683822631838, 0.20189428873697915, -0.12864102693345808, 0.13608739531622993, -0.49210970316780944, 0.9230047040049235, -0.12751210386488174, 0.49580406995667353, -0.9662371482679579, -0.09648833468119299, -0.177086749420166, 0.09857740817705792};
 
 using namespace std::chrono_literals;
 
@@ -149,7 +149,7 @@ private:
       {
         for(int j = 0; j < 12; j++)
           {
-            cmd_.motor_commands[j].position_ref = xs_(0,j+7);
+            cmd_.motor_commands[j].position_ref = 0.0 - motor_offsets[j]; //xs_(0,j+7);
             cmd_.motor_commands[j].velocity_ref = xs_(0,j+25);
             cmd_.motor_commands[j].torque_ref   = us_(0,j);
             cmd_.motor_commands[j].kp           = params_.kp;
@@ -167,23 +167,25 @@ private:
         if(row_index_ < us_.rows())
         {
           for(int j = 0; j < 12; j++)
-          { if(j!=2){
-            cmd_.motor_commands[j].position_ref = xs_(row_index_,j+7);
+          {
+            cmd_.motor_commands[j].position_ref = xs_(row_index_,j+7) - motor_offsets[j];
             cmd_.motor_commands[j].velocity_ref = xs_(row_index_,j+25);
             cmd_.motor_commands[j].torque_ref   = us_(row_index_,j);
             cmd_.motor_commands[j].kp           = params_.kp;
             cmd_.motor_commands[j].kd           = params_.kd;
-            cmd_.motor_commands[j].i_sat        = params_.i_sat;}
+            cmd_.motor_commands[j].i_sat        = params_.i_sat;
           }
           row_index_++;
         }
         else //publish last value in xs_ and us_
         {
           for(int j = 0; j < 12; j++)
-          {
-            cmd_.motor_commands[j].position_ref = xs_(row_index_,j+7);
-            cmd_.motor_commands[j].velocity_ref = xs_(row_index_,j+25);
-            cmd_.motor_commands[j].torque_ref   = us_(row_index_-1,j);
+          { //the -1 in position and velocity is because the last value of the trajectory is too far from the second last value.
+            //the -1 in torque is because us_ has a number of rows equal to the number of rows of xs_ minus 1
+            //the motor_offsets in every state are needed because of a not-better-understood problems with motor offsets that we saw during the tests.
+            cmd_.motor_commands[j].position_ref = xs_(row_index_-1,j+7) - motor_offsets[j];
+            cmd_.motor_commands[j].velocity_ref = xs_(row_index_-1,j+25);
+            cmd_.motor_commands[j].torque_ref   = us_(row_index_-1 -1,j);
             cmd_.motor_commands[j].kp           = params_.kp;
             cmd_.motor_commands[j].kd           = params_.kd;
             cmd_.motor_commands[j].i_sat        = params_.i_sat;
@@ -225,7 +227,7 @@ private:
 
   // State Machine Interface transition callbacks
     virtual bool transEnableCallback(std::string &message) override {
-      std::cout << "entered in transEnableCallback. publish_period = " << params_.publish_period << std::endl;
+      std::cout << "entered in transEnableCallback" << std::endl; //<< params_.publish_period << std::endl;
       return true;
     }
     virtual bool transStartCallback(std::string &message) override {
@@ -241,6 +243,8 @@ private:
       return true;
     }
     bool transStop1Callback(std::string &message) {
+      std::cout << "entered in transStop1Callback" << std::endl;
+      row_index_ = 0;
       return true;
     }
 
