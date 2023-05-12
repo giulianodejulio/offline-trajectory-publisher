@@ -214,7 +214,6 @@ private:
 
     rclcpp::Publisher<odri_ros2_interfaces::msg::RobotCommand>::SharedPtr publisher_;
     rclcpp::Client<hidro_ros2_utils::srv::TransitionCommand>::SharedPtr service_client_;
-    // std::make_shared<hidro_ros2_utils::srv::TransitionCommand::Request> request_;
 
     odri_ros2_interfaces::msg::RobotCommand cmd_;
     rclcpp::TimerBase::SharedPtr timer_;
@@ -234,6 +233,20 @@ private:
   // State Machine Interface transition callbacks
     virtual bool transEnableCallback(std::string &message) override {
       std::cout << "entered in transEnableCallback" << std::endl;
+      auto request = std::make_shared<hidro_ros2_utils::srv::TransitionCommand::Request>();
+      request->command = "enable";
+      auto service_server_result = service_client_->async_send_request(request);
+      auto result = service_server_result.wait_for(std::chrono::milliseconds(2000));
+      std::cout << "before if" <<std::endl;
+      // if (result != std::future_status::ready || !service_server_result.get()->accepted)
+      if (!service_server_result.get()->accepted)
+      {
+          // bool ok1 = result != std::future_status::ready;
+          // std::cout << "ok1: " << ok1 <<std::endl;
+          // bool ok2 = !service_server_result.get()->result;
+          // std::cout << "ok2: " << ok2 <<std::endl;
+          return false;
+      }
       return true;
     }
     virtual bool transStartCallback(std::string &message) override {
