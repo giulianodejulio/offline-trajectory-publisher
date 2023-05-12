@@ -16,6 +16,8 @@
 // #include "/home/hidro/solo12_ws/src/odri_ros2/odri_ros2_hardware/include/odri_ros2_hardware/robot_interface.hpp" //to use RobotCommand msg definition (?)
 // #include "odri_ros2_interfaces/msg/motor_command.hpp" //to use Motorommand msg definition
 #include "odri_ros2_interfaces/msg/robot_command.hpp" //to use RobotCommand msg definition
+#include "hidro_ros2_utils/srv/transition_command.hpp" //to create a service client to comunicate with /odri/robot_interface/state_transition service
+
 std::vector<double> motor_offsets{0.11557683822631838, 0.20189428873697915, -0.12864102693345808, 0.13608739531622993, -0.49210970316780944, 0.9230047040049235, -0.12751210386488174, 0.49580406995667353, -0.9662371482679579, -0.09648833468119299, -0.177086749420166, 0.09857740817705792};
 
 using namespace std::chrono_literals;
@@ -134,6 +136,7 @@ private:
       publisher_ = this->create_publisher<odri_ros2_interfaces::msg::RobotCommand>("odri_cmd", 10);
       timer_ = this->create_wall_timer(
           params_.publish_period, std::bind(&OfflineTrajectoryPublisher::publishRowsCb, this));
+      service_client_ = this->create_client<hidro_ros2_utils::srv::TransitionCommand>("/odri/robot_interface/state_transition");
     }
 
   //Offline Trajectory Publisher
@@ -210,11 +213,14 @@ private:
     }
 
     rclcpp::Publisher<odri_ros2_interfaces::msg::RobotCommand>::SharedPtr publisher_;
+    rclcpp::Client<hidro_ros2_utils::srv::TransitionCommand>::SharedPtr service_client_;
+    // std::make_shared<hidro_ros2_utils::srv::TransitionCommand::Request> request_;
+
     odri_ros2_interfaces::msg::RobotCommand cmd_;
-    int row_index_ = 0;
     rclcpp::TimerBase::SharedPtr timer_;
     Eigen::MatrixXd xs_;                //State trajectory matrix to be filled with the file stored in parameter xs_dot_txt
     Eigen::MatrixXd us_;                //Control trajectory matrix to be filled with the file stored in parameter us_dot_txt
+    int row_index_ = 0;
 
     struct Params {
       std::chrono::duration<int, std::milli> publish_period;  //inverse of the rate of the ros2 node publisher named publisher_
@@ -227,7 +233,7 @@ private:
 
   // State Machine Interface transition callbacks
     virtual bool transEnableCallback(std::string &message) override {
-      std::cout << "entered in transEnableCallback" << std::endl; //<< params_.publish_period << std::endl;
+      std::cout << "entered in transEnableCallback" << std::endl;
       return true;
     }
     virtual bool transStartCallback(std::string &message) override {
@@ -255,7 +261,6 @@ int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<OfflineTrajectoryPublisher>());
-  // rclcpp::spin(std::make_shared<hidro_ros2_utils::OfflineTrajectoryPublisher>());
   rclcpp::shutdown();
   return 0;
 }
