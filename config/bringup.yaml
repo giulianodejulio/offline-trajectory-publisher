@@ -1,6 +1,6 @@
 odri/robot_interface:
   ros__parameters:
-    robot_yaml_name: "solo12.yaml"
+    robot_yaml_name: "solo12_in.yaml"
     n_slaves: 6
     safe_configuration:
       [0.1, 0.8, -1.6, -0.1, 0.8, -1.6, 0.1, -0.8, 1.6, -0.1, -0.8, 1.6]
@@ -11,11 +11,20 @@ odri/robot_interface:
 
 odri/talker:
   ros__parameters:
-    publish_period: 5 #[ms]
+    publish_period: 2 #[ms]
     # xs_dot_txt: "/home/hidro/solo12_ws/src/from_nparray_to_MatrixXd/src/xs.txt"
-    xs_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/xs.txt"
+    # xs_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/jump_31_5/xs.txt"
+    # xs_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/double_jump/xs.txt"
+    # xs_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/jump_def_conf_06m/xs.txt"
+    xs_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/jump_aurelhugo_07m/xs.txt"
+    # xs_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/half_backflip/xs.txt"
+
     # us_dot_txt: "/home/hidro/solo12_ws/src/from_nparray_to_MatrixXd/src/us.txt"
-    us_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/us.txt"
-    kp: 1.0
-    kd: 0.1
+    # us_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/jump_31_5/us.txt"
+    # us_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/jump_def_conf_06m/us.txt"
+    us_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/jump_aurelhugo_07m/us.txt"
+    # us_dot_txt: "/home/hidro/galactic_ws/src/offline_trajectory_publisher/trajectories/half_backflip/us.txt"
+    kp: 3.0
+    kd: 0.3
+    kff: 1.0 #1.0
     i_sat: 5.0

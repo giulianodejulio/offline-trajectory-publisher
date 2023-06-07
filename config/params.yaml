@@ -1,9 +1,10 @@
 offline_trajectory_publisher_state_machine_interface:
   ros__parameters:
-    publish_period: 5 # [ms]
+    publish_period: 2 # [ms]
     xs_dot_txt: "/home/hidro/solo12_ws/src/from_nparray_to_MatrixXd/src/xs.txt"
     us_dot_txt: "/home/hidro/solo12_ws/src/from_nparray_to_MatrixXd/src/us.txt"
     kp: 1.0
     kd: 1.0
+    kff: 1.0
     i_sat: 1.0
 

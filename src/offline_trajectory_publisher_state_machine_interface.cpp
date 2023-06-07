@@ -14,11 +14,12 @@
 #include "hidro_ros2_utils/state_machine_interface.hpp" //to inherit from StateMachineInterface class
 
 // #include "/home/hidro/solo12_ws/src/odri_ros2/odri_ros2_hardware/include/odri_ros2_hardware/robot_interface.hpp" //to use RobotCommand msg definition (?)
-// #include "odri_ros2_interfaces/msg/motor_command.hpp" //to use Motorommand msg definition
+// #include "odri_ros2_interfaces/msg/motor_command.hpp" //to use MotorCommand msg definition
 #include "odri_ros2_interfaces/msg/robot_command.hpp" //to use RobotCommand msg definition
 #include "hidro_ros2_utils/srv/transition_command.hpp" //to create a service client to comunicate with /odri/robot_interface/state_transition service
 
-std::vector<double> motor_offsets{0.11557683822631838, 0.20189428873697915, -0.12864102693345808, 0.13608739531622993, -0.49210970316780944, 0.9230047040049235, -0.12751210386488174, 0.49580406995667353, -0.9662371482679579, -0.09648833468119299, -0.177086749420166, 0.09857740817705792};
+//std::vector<double> motor_offsets{0.11557683822631838, 0.20189428873697915, -0.12864102693345808, 0.13608739531622993, -0.49210970316780944, 0.9230047040049235, -0.12751210386488174, 0.49580406995667353, -0.9662371482679579, -0.09648833468119299, -0.177086749420166, 0.09857740817705792};
+std::vector<double> motor_offsets{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
 using namespace std::chrono_literals;
 
@@ -80,8 +81,8 @@ void openFile(std::string file_name, Eigen::MatrixXd& mat){
 class OfflineTrajectoryPublisher : public hidro_ros2_utils::StateMachineInterface
 {
 public:
-  OfflineTrajectoryPublisher() : Node("offline_trajectory_publisher_state_machine_interface"), 
-                                 hidro_ros2_utils::StateMachineInterface("offline_trajectory_publisher_state_machine_interface")
+  OfflineTrajectoryPublisher(const std::string& name) : Node(name), 
+                                 hidro_ros2_utils::StateMachineInterface(name)
 
   {
     initializeParameters();
@@ -98,6 +99,7 @@ private:
       declare_parameter<std::string>("us_dot_txt");
       declare_parameter<double>("kp");
       declare_parameter<double>("kd");
+      declare_parameter<double>("kff");
       declare_parameter<double>("i_sat");
 
       params_.publish_period = std::chrono::duration<int, std::milli>(get_parameter("publish_period").as_int());
@@ -105,6 +107,7 @@ private:
       get_parameter("us_dot_txt", params_.us_dot_txt);
       get_parameter("kp", params_.kp);
       get_parameter("kd", params_.kd);
+      get_parameter("kff", params_.kff);
       get_parameter("i_sat", params_.i_sat);
     }
 
@@ -118,7 +121,7 @@ private:
       state_machine_->assignTransitionCallback("disable1",
                                         &OfflineTrajectoryPublisher::transDisableCallback, this);
       state_machine_->assignTransitionCallback("enable1",
-                                        &OfflineTrajectoryPublisher::transEnableCallback, this); //TODO: implement it
+                                        &OfflineTrajectoryPublisher::transEnableCallback, this);
     }
 
     void initializePublishers()
@@ -152,11 +155,11 @@ private:
       {
         for(int j = 0; j < 12; j++)
           {
-            cmd_.motor_commands[j].position_ref = 0.0 - motor_offsets[j]; //xs_(0,j+7);
+            cmd_.motor_commands[j].position_ref = xs_(0,j+7) - motor_offsets[j]; //xs_(0,j+7);
             cmd_.motor_commands[j].velocity_ref = xs_(0,j+25);
-            cmd_.motor_commands[j].torque_ref   = us_(0,j);
+            cmd_.motor_commands[j].torque_ref   = params_.kff*us_(0,j);
             cmd_.motor_commands[j].kp           = params_.kp;
-            cmd_.motor_commands[j].kd           = params_.kd;
+            cmd_.motor_commands[j].kd           = params_.kd;            
             cmd_.motor_commands[j].i_sat        = params_.i_sat;
           }
           // std::cout << std::endl;
@@ -173,22 +176,23 @@ private:
           {
             cmd_.motor_commands[j].position_ref = xs_(row_index_,j+7) - motor_offsets[j];
             cmd_.motor_commands[j].velocity_ref = xs_(row_index_,j+25);
-            cmd_.motor_commands[j].torque_ref   = us_(row_index_,j);
+            cmd_.motor_commands[j].torque_ref   = params_.kff*us_(row_index_,j);
             cmd_.motor_commands[j].kp           = params_.kp;
             cmd_.motor_commands[j].kd           = params_.kd;
             cmd_.motor_commands[j].i_sat        = params_.i_sat;
           }
           row_index_++;
+          // std::cout << row_index_ << std::endl;
         }
         else //publish last value in xs_ and us_
         {
           for(int j = 0; j < 12; j++)
-          { //the -1 in position and velocity is because the last value of the trajectory is too far from the second last value.
+          {
             //the -1 in torque is because us_ has a number of rows equal to the number of rows of xs_ minus 1
             //the motor_offsets in every state are needed because of a not-better-understood problems with motor offsets that we saw during the tests.
-            cmd_.motor_commands[j].position_ref = xs_(row_index_-1,j+7) - motor_offsets[j];
-            cmd_.motor_commands[j].velocity_ref = xs_(row_index_-1,j+25);
-            cmd_.motor_commands[j].torque_ref   = us_(row_index_-1 -1,j);
+            cmd_.motor_commands[j].position_ref = xs_(row_index_,j+7) - motor_offsets[j];
+            cmd_.motor_commands[j].velocity_ref = 0.0;//xs_(row_index_,j+25);
+            cmd_.motor_commands[j].torque_ref   = params_.kff*us_(row_index_-1,j);
             cmd_.motor_commands[j].kp           = params_.kp;
             cmd_.motor_commands[j].kd           = params_.kd;
             cmd_.motor_commands[j].i_sat        = params_.i_sat;
@@ -227,28 +231,76 @@ private:
       std::string us_dot_txt;
       double kp;
       double kd;
+      double kff;
       double i_sat;
     } params_ ;
 
+  bool futureCallback(rclcpp::Client<hidro_ros2_utils::srv::TransitionCommand>::SharedFuture future)
+  {
+    auto response = future.get();
+    if (!response.get()->accepted || !response.get()->result)
+    {
+      return false;
+    }  
+    return true;
+  }
+
   // State Machine Interface transition callbacks
     virtual bool transEnableCallback(std::string &message) override {
-      std::cout << "entered in transEnableCallback" << std::endl;
-      auto request = std::make_shared<hidro_ros2_utils::srv::TransitionCommand::Request>();
-      request->command = "enable";
-      auto service_server_result = service_client_->async_send_request(request);
-      auto result = service_server_result.wait_for(std::chrono::milliseconds(2000));
-      std::cout << "before if" <<std::endl;
-      // if (result != std::future_status::ready || !service_server_result.get()->accepted)
-      if (!service_server_result.get()->accepted)
-      {
-          // bool ok1 = result != std::future_status::ready;
-          // std::cout << "ok1: " << ok1 <<std::endl;
-          // bool ok2 = !service_server_result.get()->result;
-          // std::cout << "ok2: " << ok2 <<std::endl;
-          return false;
-      }
+      std::cout << "entered in transEnableCallback. kp: " << params_.kp << " kd: " << params_.kd << " kff: " << params_.kff << "dt: " << params_.publish_period.count() << std::endl;
+      // for(int i =0; i<12; i++)
+      // {
+      //   std::cout << xs_(0,i+7) << " ";
+      // }
+      // std::cout << " " << std::endl;
+      // auto request = std::make_shared<hidro_ros2_utils::srv::TransitionCommand::Request>();
+      // request->command = "enable";
+      
+      // auto future_result = service_client_->async_send_request(request);//, std::bind(&OfflineTrajectoryPublisher::futureCallback, this, std::placeholders::_1));
+
+      // std::cout << "before wait until" << std::endl;
+      // auto result = future_result.wait_for(std::chrono::milliseconds(2000));
+      // std::cout << "after wait until" << std::endl;
+
+      // if (result != std::future_status::ready || !future_result.get()->accepted)
+      // {
+      //   std::cout << "Inside if" << std::endl;
+      //   std::cout << "!accepted value" << !future_result.get()->accepted << std::endl;
+      //   return false;
+      // }
+      // else if(future_result.get().get()->result)
+      // {
+      //   request->command = "start";
+      
+      //   auto future_result = service_client_->async_send_request(request);//, std::bind(&OfflineTrajectoryPublisher::futureCallback, this, std::placeholders::_1));
+
+      //   std::cout << "before wait until" << std::endl;
+      //   auto result = future_result.wait_for(std::chrono::milliseconds(2000));
+      //   std::cout << "after wait until" << std::endl;
+
+      //   if (result != std::future_status::ready || !future_result.get()->accepted)
+      //   {
+      //     std::cout << "Inside if" << std::endl;
+      //     std::cout << "!accepted value" << !future_result.get()->accepted << std::endl;
+      //     return false;
+      //   } 
+      // }
+
+      // request->command = "start";
+      // service_client_->async_send_request(request);//, std::bind(&OfflineTrajectoryPublisher::futureCallback, this, std::placeholders::_1));
+      // auto result = service_server_result.wait_for(std::chrono::milliseconds(1000));
+      // // if (result != std::future_status::ready || !service_server_result.get()->result)
+      // // {
+      // //     return false;
+      // // }
+
+      // request->command = "start";
+      // service_client_->async_send_request(request);
+      // service_server_result.wait_for(std::chrono::milliseconds(1000));
+
       return true;
-    }
+      }
+    
     virtual bool transStartCallback(std::string &message) override {
       std::cout << "entered in transStartCallback" << std::endl;
       return true;
@@ -273,8 +325,15 @@ private:
 int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<OfflineTrajectoryPublisher>());
+  std::shared_ptr<OfflineTrajectoryPublisher> otp =
+      std::make_shared<OfflineTrajectoryPublisher>("offline_trajectory_publisher_state_machine_interface");
+
+  rclcpp::executors::MultiThreadedExecutor executor;
+  executor.add_node(otp);
+
+  executor.spin();
   rclcpp::shutdown();
+
   return 0;
 }
 
